@@ -175,9 +175,9 @@ jobs:
           shopt -s nullglob
           for d in artifacts/*/ ; do
             base="$(basename "$d")"
-            # Create a zip but name the uploaded asset exactly like the artifact (no extension)
+            # Create a zip to upload to the release.
             (cd "$d" && zip -r "../${base}.zip" . >/dev/null)
-            mv "artifacts/${base}.zip" "release/${base}"
+            mv "artifacts/${base}.zip" "release/${base}.zip"
           done
 
       - name: Generate checksums for release assets
