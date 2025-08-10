@@ -165,13 +165,26 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: qdl-binary-*
-          merge-multiple: true
-          path: release
+          path: artifacts
+          merge-multiple: false
 
-      - name: Generate checksums
+      - name: Pack each artifact as a single file
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          shopt -s nullglob
+          for d in artifacts/*/ ; do
+            base="$(basename "$d")"
+            # Create a zip but name the uploaded asset exactly like the artifact (no extension)
+            (cd "$d" && zip -r "../${base}.zip" . >/dev/null)
+            mv "artifacts/${base}.zip" "release/${base}"
+          done
+
+      - name: Generate checksums for release assets
         run: |
           cd release
           sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -182,6 +195,7 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
           make_latest: ${{ !contains(github.ref_name, '-alpha') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-rc') }}
           files: |
-            release/**
+            release/qdl-binary-*
+            release/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
