@@ -44,7 +44,6 @@ jobs:
           name: qdl-binary-ubuntu-${{matrix.os}}-${{ matrix.arch }}
           path: dist/*
 
-
   build-mac:
     strategy:
       fail-fast: false
@@ -153,3 +152,36 @@ jobs:
           name: qdl-binary-windows-${{ matrix.arch }}
           path: dist/*
 
+  release:
+    name: Create release on tag
+    needs: [build-linux, build-mac, build-windows]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: qdl-binary-*
+          merge-multiple: true
+          path: release
+
+      - name: Generate checksums
+        run: |
+          cd release
+          sha256sum * > SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          make_latest: ${{ !contains(github.ref_name, '-alpha') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-rc') }}
+          files: |
+            release/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
