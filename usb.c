@@ -14,6 +14,8 @@
 
 #define DEFAULT_OUT_CHUNK_SIZE (1024 * 1024)
 
+bool usb2_warning_printed;
+
 struct qdl_device_usb {
 	struct qdl_device base;
 	struct libusb_device_handle *usb_handle;
@@ -25,6 +27,11 @@ struct qdl_device_usb {
 	size_t out_maxpktsize;
 	size_t out_chunk_size;
 };
+
+static bool is_usb2_or_slower(int s)
+{
+	return s == LIBUSB_SPEED_HIGH || s == LIBUSB_SPEED_FULL || s == LIBUSB_SPEED_LOW;
+}
 
 /*
  * libusb commit f0cce43f882d ("core: Fix definition and use of enum
@@ -95,6 +102,39 @@ static int usb_try_open(libusb_device *dev, struct qdl_device_usb *qdl, const ch
 	if (ret < 0) {
 		warnx("failed to acquire USB device's active config descriptor");
 		return -1;
+	}
+
+	uint8_t path[8];
+	int path_len = libusb_get_port_numbers(dev, path, sizeof(path));
+	int speed = libusb_get_device_speed(dev);
+
+	if (is_usb2_or_slower(speed) && path_len > 1) {
+		if (!usb2_warning_printed) {
+
+			usb2_warning_printed = true;
+
+			fprintf(stderr,
+				"\n[usb] WARNING:\n"
+					"[usb] Device is running at USB 2.0 or slower.\n"
+					"[usb] Device is behind %d USB hub(s).\n"
+					"[usb] QDL tasks in this configuration is known to be unstable\n"
+					"[usb] Try changing the orientation of USB-C on device\n",
+					path_len - 1);
+
+			if (!qdl_allow_usb2_via_hub) {
+				fprintf(stderr, "[usb] Will NOT flash via hub+USB2. Skipping such devices.\n"
+								"[usb] You can override this setting via --allow-usb2-via-hub flag\n"
+								"[usb] Waiting for a new device\n");
+			} else {
+				fprintf(stderr, "[usb] continuing at user's request\n");
+			}
+		}
+
+		if (!qdl_allow_usb2_via_hub) {
+			return 0;
+		}
+	} else if (path_len < 0) {
+		fprintf(stderr, "[usb] unable to determine USB port path\n");
 	}
 
 	for (k = 0; k < config->bNumInterfaces; k++) {
