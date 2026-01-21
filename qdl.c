@@ -41,6 +41,7 @@ enum {
 };
 
 bool qdl_debug;
+bool qdl_allow_usb2_via_hub;
 
 static int detect_type(const char *verb)
 {
@@ -549,10 +550,11 @@ int main(int argc, char **argv)
 		{"slot", required_argument, 0, 'T'},
 		{"help", no_argument, 0, 'h'},
 		{"reset", no_argument, 0, 'r'},
+		{"allow-usb2-via-hub", no_argument, 0, 'g'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "dvi:lu:S:D:s:fcnt:T:hr", options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "dvi:lu:S:D:s:fcnt:T:hrg", options, NULL)) != -1) {
 		switch (opt) {
 		case 'd':
 			qdl_debug = true;
@@ -600,6 +602,9 @@ int main(int argc, char **argv)
 			return 0;
 		case 'r':
 			do_reset = true;
+			break;
+		case 'g':
+			qdl_allow_usb2_via_hub = true;
 			break;
 		default:
 			print_usage(stderr);
