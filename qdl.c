@@ -416,6 +416,74 @@ static int decode_programmer(char *s, struct sahara_image *images, bool *single)
 	return 0;
 }
 
+static int qdl_reset(struct qdl_device *qdl,
+                             const char *serial,
+                             enum qdl_storage_type storage_type,
+                             int argc, char **argv,
+                             int optind)
+{
+    struct sahara_image prog = {0};
+    int ret;
+
+    ret = qdl_open(qdl, serial);
+    if (ret)
+        return ret;
+
+    qdl->storage_type = storage_type;
+
+    fprintf(stderr, "[reset] entering reset path\n");
+
+    if (optind >= argc) {
+        fprintf(stderr, "[reset] ERROR: no programmer positional arg.\n");
+        fprintf(stderr, "[reset] Example:\n");
+        fprintf(stderr, " qdl --reset --storage ufs xbl_s_devprg_ns.melf\n");
+        return -1;
+    }
+
+    const char *prog_path = argv[optind];
+
+    fprintf(stderr, "[reset] loading programmer: %s\n", prog_path);
+
+    ret = load_sahara_image(prog_path, &prog);
+    if (ret < 0) {
+        fprintf(stderr, "[reset] ERROR: load_sahara_image failed\n");
+        return ret;
+    }
+    prog.name = prog_path;
+
+    fprintf(stderr,
+            "[reset] programmer loaded: name=%s len=%zu ptr=%p\n",
+            prog.name, prog.len, prog.ptr);
+
+    if (!prog.ptr || prog.len == 0) {
+        fprintf(stderr, "[reset] ERROR: programmer buffer invalid\n");
+        return -1;
+    }
+
+    if (!qdl || !qdl->read || !qdl->write) {
+        fprintf(stderr,
+                "[reset] ERROR: qdl device not initialized/opened "
+                "(qdl=%p read=%p write=%p)\n",
+                (void *)qdl,
+                qdl ? (void *)qdl->read : NULL,
+                qdl ? (void *)qdl->write : NULL);
+        return -1;
+    }
+
+    fprintf(stderr, "[reset] running Sahara (upload programmer)\n");
+    ret = sahara_run(qdl, &prog, true, NULL, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "[reset] ERROR: sahara_run failed\n");
+        return ret;
+    }
+
+    fprintf(stderr, "[reset] Sahara done; requesting Firehose reset\n");
+    ret = firehose_request_reset(qdl);
+    fprintf(stderr, "[reset] done; ret=%d\n", ret);
+
+    return ret;
+}
+
 static void print_usage(FILE *out)
 {
 	extern const char *__progname;
@@ -581,70 +649,10 @@ int main(int argc, char **argv)
 		print_version();
 
 	if (do_reset) {
-		struct sahara_image prog = {0};
-		int ret;
-
-		ret = qdl_open(qdl, serial);
+		ret = qdl_reset(qdl, serial, storage_type, argc, argv, optind);
 		if (ret)
 			goto out_cleanup;
-
-		qdl->storage_type = storage_type;
-
-		if (ret)
-			goto out_cleanup;
-
-		fprintf(stderr, "[reset] entering reset path\n");
-
-		if (optind >= argc) {
-			fprintf(stderr, "[reset] ERROR: no programmer positional arg.\n");
-			fprintf(stderr, "[reset] Example:\n");
-			fprintf(stderr, " qdl --reset --storage ufs xbl_s_devprg_ns.melf\n");
-			goto out_cleanup;
-			return 1;
-		}
-
-		const char *prog_path = argv[optind];
-
-		fprintf(stderr, "[reset] loading programmer: %s\n", prog_path);
-
-		ret = load_sahara_image(prog_path, &prog);
-		if (ret < 0) {
-			fprintf(stderr, "[reset] ERROR: load_sahara_image failed\n");
-			goto out_cleanup;
-			return 1;
-		}
-		prog.name = prog_path;
-
-		fprintf(stderr, "[reset] programmer loaded: name=%s len=%zu ptr=%p\n",
-			prog.name, prog.len, prog.ptr);
-
-		if (!prog.ptr || prog.len == 0) {
-			fprintf(stderr, "[reset] ERROR: programmer buffer invalid\n");
-			goto out_cleanup;
-			return 1;
-		}
-
-		if (!qdl || !qdl->read || !qdl->write) {
-			fprintf(stderr, "[reset] ERROR: qdl device not initialized/opened (qdl=%p read=%p write=%p)\n",
-				(void *)qdl, qdl ? (void *)qdl->read : NULL, qdl ? (void *)qdl->write : NULL);
-			goto out_cleanup;
-			return 1;
-		}
-
-		fprintf(stderr, "[reset] running Sahara (upload programmer)\n");
-		ret = sahara_run(qdl, &prog, true, NULL, NULL);
-		if (ret < 0) {
-			fprintf(stderr, "[reset] ERROR: sahara_run failed\n");
-			goto out_cleanup;
-			return 1;
-		}
-
-		fprintf(stderr, "[reset] Sahara done; requesting Firehose reset\n");
-		ret = firehose_request_reset(qdl);
-		fprintf(stderr, "[reset] done; ret=%d\n", ret);
-		if (ret)
-			goto out_cleanup;
-		return (ret < 0) ? 1 : 0;
+		return 0;
 	}
 
 	ret = decode_programmer(argv[optind++], sahara_images, &single_image);
