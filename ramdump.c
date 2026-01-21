@@ -11,7 +11,6 @@ const char *__progname = "ramdump";
 #endif
 
 bool qdl_debug;
-bool qdl_allow_usb2_via_hub;
 
 static void print_usage(FILE *out)
 {
@@ -42,11 +41,10 @@ int main(int argc, char **argv)
 		{"output", required_argument, 0, 'o'},
 		{"serial", required_argument, 0, 'S'},
 		{"help", no_argument, 0, 'h'},
-		{"allow-usb2-via-hub", no_argument, 0, 'g'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "dvo:S:hg", options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "dvo:S:h", options, NULL)) != -1) {
 		switch (opt) {
 		case 'd':
 			qdl_debug = true;
@@ -64,9 +62,6 @@ int main(int argc, char **argv)
 		case 'h':
 			print_usage(stdout);
 			return 0;
-		case 'g':
-			qdl_allow_usb2_via_hub = true;
-			break;
 		default:
 			print_usage(stderr);
 			return 1;
