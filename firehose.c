@@ -1063,9 +1063,9 @@ int firehose_request_reset(struct qdl_device *qdl)
 {
 	int ret;
 
-	ret = firehose_detect_and_configure(qdl, true, qdl->storage_type,20);
+	ret = firehose_detect_and_configure(qdl, true, qdl->storage_type, 20);
 	if (ret) {
-		return ret;}
+		return ret; }
 	firehose_reset(qdl);
 	return 0;
 }
