@@ -502,6 +502,8 @@ static void print_usage(FILE *out)
 	fprintf(out, " -t, --create-digests=T\t\tGenerate table of digests in the T folder\n");
 	fprintf(out, " -T, --slot=T\t\t\tSet slot number T for multiple storage devices\n");
 	fprintf(out, " -D, --vip-table-path=T\t\tUse digest tables in the T folder for VIP\n");
+	fprintf(out, " --reset\t\t\tReset the target device\n");
+	fprintf(out, " --allow-usb2-via-hub\t\tAllow interacting via USB2 hubs\n");
 	fprintf(out, " -h, --help\t\t\tPrint this usage info\n");
 	fprintf(out, " <program-xml>\txml file containing <program> or <erase> directives\n");
 	fprintf(out, " <patch-xml>\txml file containing <patch> directives\n");
