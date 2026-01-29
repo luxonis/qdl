@@ -41,6 +41,7 @@ enum {
 };
 
 bool qdl_debug;
+bool qdl_allow_usb2_via_hub;
 
 static int detect_type(const char *verb)
 {
@@ -416,7 +417,7 @@ static int decode_programmer(char *s, struct sahara_image *images, bool *single)
 }
 
 static int qdl_reset(struct qdl_device *qdl,
-					 const char *serial,
+		     const char *serial,
 					 enum qdl_storage_type storage_type,
 					 int argc, char **argv,
 					 int optind)
@@ -501,6 +502,8 @@ static void print_usage(FILE *out)
 	fprintf(out, " -t, --create-digests=T\t\tGenerate table of digests in the T folder\n");
 	fprintf(out, " -T, --slot=T\t\t\tSet slot number T for multiple storage devices\n");
 	fprintf(out, " -D, --vip-table-path=T\t\tUse digest tables in the T folder for VIP\n");
+	fprintf(out, " --reset\t\t\tReset the target device\n");
+	fprintf(out, " --allow-usb2-via-hub\t\tAllow interacting via USB2 hubs\n");
 	fprintf(out, " -h, --help\t\t\tPrint this usage info\n");
 	fprintf(out, " <program-xml>\txml file containing <program> or <erase> directives\n");
 	fprintf(out, " <patch-xml>\txml file containing <patch> directives\n");
@@ -549,10 +552,11 @@ int main(int argc, char **argv)
 		{"slot", required_argument, 0, 'T'},
 		{"help", no_argument, 0, 'h'},
 		{"reset", no_argument, 0, 'r'},
+		{"allow-usb2-via-hub", no_argument, 0, 'g'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "dvi:lu:S:D:s:fcnt:T:hr", options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "dvi:lu:S:D:s:fcnt:T:hrg", options, NULL)) != -1) {
 		switch (opt) {
 		case 'd':
 			qdl_debug = true;
@@ -601,6 +605,9 @@ int main(int argc, char **argv)
 		case 'r':
 			do_reset = true;
 			break;
+		case 'g':
+			qdl_allow_usb2_via_hub = true;
+			break;
 		default:
 			print_usage(stderr);
 			return 1;
@@ -644,6 +651,7 @@ int main(int argc, char **argv)
 		print_version();
 
 	if (do_reset) {
+		qdl_set_out_chunk_size(qdl, 4096);
 		ret = qdl_reset(qdl, serial, storage_type, argc, argv, optind);
 		if (ret)
 			goto out_cleanup;
