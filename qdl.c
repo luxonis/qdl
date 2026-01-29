@@ -417,7 +417,7 @@ static int decode_programmer(char *s, struct sahara_image *images, bool *single)
 }
 
 static int qdl_reset(struct qdl_device *qdl,
-					 const char *serial,
+		     const char *serial,
 					 enum qdl_storage_type storage_type,
 					 int argc, char **argv,
 					 int optind)
