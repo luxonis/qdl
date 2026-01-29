@@ -649,6 +649,7 @@ int main(int argc, char **argv)
 		print_version();
 
 	if (do_reset) {
+		qdl_set_out_chunk_size(qdl, 4096);
 		ret = qdl_reset(qdl, serial, storage_type, argc, argv, optind);
 		if (ret)
 			goto out_cleanup;

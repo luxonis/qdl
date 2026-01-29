@@ -1063,10 +1063,9 @@ int firehose_request_reset(struct qdl_device *qdl)
 {
 	int ret;
 
-	firehose_read(qdl, 5000, firehose_generic_parser, NULL);
-	ret = firehose_try_configure(qdl, true, qdl->storage_type);
+	ret = firehose_detect_and_configure(qdl, true, qdl->storage_type,20);
 	if (ret) {
-		return ret; }
+		return ret;}
 	firehose_reset(qdl);
 	return 0;
 }
