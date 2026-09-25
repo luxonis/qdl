@@ -138,6 +138,16 @@ jobs:
           $MSYS2_LOCATION = "${{ steps.msys2.outputs.msys2-location }}"
           $BIN_DIR = Join-Path $MSYS2_LOCATION "mingw64\bin"
           $DistDir = "dist"
+          Write-Host "MSYS2 location: $MSYS2_LOCATION"
+          Write-Host "MinGW bin directory: $BIN_DIR"
+          Write-Host "MinGW bin contents:"
+          Get-ChildItem -LiteralPath $BIN_DIR -File | Sort-Object Name | ForEach-Object {
+            Write-Host "$($_.Name) ($($_.Length) bytes)"
+          }
+          Write-Host "libxml2 DLL candidates:"
+          Get-ChildItem -LiteralPath $BIN_DIR -Filter "*xml2*.dll" -File | ForEach-Object {
+            Write-Host $_.FullName
+          }
           New-Item -ItemType Directory -Path $DistDir | Out-Null
 
           Copy-Item (Join-Path $BIN_DIR "zlib1.dll") $DistDir
